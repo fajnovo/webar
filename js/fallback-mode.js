@@ -1,7 +1,7 @@
 // Náhradný 3D režim (bez AR): rovnaká scéna, kocku obchádzaš ťahaním prsta.
 // Slúži pre zariadenia bez podpory AR a ako rýchla kontrola tieňov.
 
-import { buildTestScene } from './test-scene.js';
+import { buildTestScene } from './test-scene.js?v=2';
 
 export function startFallback({ THREE, canvas, hud }) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -81,6 +81,7 @@ export function startFallback({ THREE, canvas, hud }) {
   };
   loop();
 
+  hud.setPlaceHandler(null);
   hud.setStatus('3D náhľad (bez AR)', true);
   hud.setInfo('');
   hud.setHint('Ťahaj prstom a obchádzaj kocku. Dvoma prstami približuješ.');

@@ -14,7 +14,8 @@
     :root { --gold:#e8a317; --ink:#2b2b2b; --bg:#fffaf0; }
     * { box-sizing: border-box; }
     html, body { margin:0; height:100%; overflow:hidden; background:#000; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; color:var(--ink); }
-    canvas { position:fixed; inset:0; width:100%; height:100%; display:none; touch-action:none; }
+    /* Plátna vždy na celé okno; !important prebije veľkosť, ktorú by nastavil engine alebo Three.js */
+    canvas { position:fixed; left:0; top:0; width:100% !important; height:100% !important; display:none; touch-action:none; }
     .hl { background:var(--gold); color:#fff; padding:0 .3em; border-radius:.25em; }
 
     #start { position:fixed; inset:0; background:var(--bg); overflow:auto; padding:24px 20px 32px; }
@@ -22,47 +23,68 @@
     h1 { font-size:1.6rem; line-height:1.25; margin:.2em 0 .5em; }
     ol { padding-left:1.2em; line-height:1.5; }
     button { font:inherit; border:0; border-radius:14px; padding:14px 18px; cursor:pointer; }
+    button:disabled { opacity:.5; cursor:default; }
     .primary { background:var(--gold); color:#fff; font-weight:700; width:100%; margin:8px 0; }
     .secondary { background:#fff; color:var(--ink); border:2px solid var(--gold); width:100%; margin:8px 0; }
+    .note { font-size:.82rem; color:#555; margin:-2px 0 8px; }
     .small { font-size:.78rem; color:#666; margin-top:20px; line-height:1.4; }
     #error { display:none; background:#fde8e8; border-radius:12px; padding:12px; margin:12px 0; font-size:.95rem; }
+    details { margin-top:14px; }
+    pre { white-space:pre-wrap; word-break:break-word; font:11px/1.35 ui-monospace,Menlo,Consolas,monospace; margin:6px 0; }
 
     #hud { position:fixed; inset:0; pointer-events:none; display:none; padding:env(safe-area-inset-top) 12px env(safe-area-inset-bottom); }
-    #status { position:absolute; top:12px; left:12px; background:rgba(0,0,0,.65); color:#fff; padding:6px 12px; border-radius:999px; font-size:.85rem; }
+    #status { position:absolute; top:12px; left:12px; max-width:calc(100% - 24px); background:rgba(0,0,0,.65); color:#fff; padding:6px 12px; border-radius:16px; font-size:.85rem; }
     #status.ok { background:rgba(46,125,50,.85); }
-    #info { position:absolute; top:52px; left:12px; background:rgba(0,0,0,.45); color:#fff; padding:4px 10px; border-radius:999px; font-size:.75rem; }
-    #hint { position:absolute; left:12px; right:12px; bottom:84px; background:rgba(255,250,240,.92); padding:10px 14px; border-radius:14px; font-size:.9rem; line-height:1.35; }
-    #buttons { position:absolute; left:12px; right:12px; bottom:16px; display:flex; gap:10px; }
-    #buttons button { pointer-events:auto; flex:1; background:rgba(255,255,255,.92); border:2px solid var(--gold); padding:10px; }
+    #info { position:absolute; top:56px; left:12px; background:rgba(0,0,0,.45); color:#fff; padding:4px 10px; border-radius:999px; font-size:.75rem; }
+    #hint { position:absolute; left:12px; right:12px; bottom:136px; background:rgba(255,250,240,.93); padding:10px 14px; border-radius:14px; font-size:.9rem; line-height:1.35; }
+    #bar { position:absolute; left:12px; right:12px; bottom:16px; display:grid; gap:8px; }
+    #bar .row { display:flex; gap:8px; }
+    #bar button { pointer-events:auto; flex:1; background:rgba(255,255,255,.93); border:2px solid var(--gold); padding:10px 6px; font-size:.9rem; }
+    #place { background:var(--gold) !important; color:#fff; font-weight:700; display:none; padding:14px 6px !important; font-size:1.05rem !important; }
     #reset { display:none; }
+    #diag { display:none; position:absolute; left:8px; right:8px; top:84px; bottom:150px; overflow:auto; pointer-events:auto; background:rgba(0,0,0,.82); color:#e8f5e9; border-radius:12px; padding:8px 10px; }
   </style>
 </head>
 <body>
   <canvas id="ar-canvas"></canvas>
+  <canvas id="xr-canvas"></canvas>
   <canvas id="fb-canvas"></canvas>
 
   <div id="hud">
     <div id="status">…</div>
     <div id="info"></div>
+    <div id="diag"><pre id="diag-text"></pre></div>
     <div id="hint"></div>
-    <div id="buttons">
-      <button id="reset">Znovu umiestniť</button>
-      <button id="close">Zavrieť</button>
+    <div id="bar">
+      <button id="place">Umiestniť</button>
+      <div class="row">
+        <button id="reset">Znovu umiestniť</button>
+        <button id="diag-btn">Diagnostika</button>
+        <button id="copy">Kopírovať</button>
+        <button id="close">Zavrieť</button>
+      </div>
     </div>
   </div>
 
   <div id="start">
     <div class="card">
       <h1>WebAR test: <span class="hl">kocka</span> na stole</h1>
-      <p>Technický test pred tvorbou Billyho a Červenej čiapočky. Overujeme stabilitu, perspektívu, tiene a obchádzanie.</p>
+      <p>Technický test pred tvorbou Billyho a Červenej čiapočky (verzia 2). Overujeme stabilitu, perspektívu, tiene a obchádzanie.</p>
       <ol>
         <li>Namier kameru na stôl s textúrou (nie na čisto bielu plochu) a pomaly pohybuj telefónom.</li>
-        <li>Keď hore svieti <b>AR OK</b>, ťukni na stôl.</li>
-        <li>Obíď stôl dookola a sleduj kocku (20 cm) aj jej tieň.</li>
+        <li>Zameriavač v strede obrazovky sa zmení na <b>zelený</b>, keď je sledovanie spoľahlivé.</li>
+        <li>Ťukni na <b>Umiestniť</b>, potom obíď stôl a sleduj kocku (20 cm) aj jej tieň.</li>
       </ol>
       <div id="error"></div>
-      <button class="primary" id="go-ar">Spustiť AR test</button>
+      <button class="primary" id="go-xr" disabled>AR cez WebXR (Android)</button>
+      <div class="note" id="xr-note">Zisťujem podporu…</div>
+      <button class="primary" id="go-ar">AR cez 8th Wall (iPhone aj Android)</button>
       <button class="secondary" id="go-3d">3D náhľad bez AR</button>
+      <details>
+        <summary>Diagnostika zariadenia</summary>
+        <button class="secondary" id="copy-start">Kopírovať diagnostiku</button>
+        <pre id="start-diag-text"></pre>
+      </details>
       <p class="small">
         Kamera sa používa iba na zobrazenie v tomto okne, nič sa neukladá ani neodosiela.<br>
         Tento produkt obsahuje softvér XR Engine vytvorený spoločnosťou Niantic Spatial, Inc.
@@ -73,66 +95,136 @@
   </div>
 
   <script type="module">
-    import { startAR } from './js/ar-mode.js';
-    import { startFallback } from './js/fallback-mode.js';
+    import { startAR } from './js/ar-mode.js?v=2';
+    import { startFallback } from './js/fallback-mode.js?v=2';
+    import { startWebXR, isWebXRArSupported } from './js/webxr-mode.js?v=2';
+    import { createDiagnostics, collectEnvironment } from './js/diagnostics.js?v=2';
 
     const $ = (id) => document.getElementById(id);
-    const threeVersion = new URLSearchParams(location.search).get('three') || '0.160.0';
+    const params = new URLSearchParams(location.search);
+    const threeVersion = params.get('three') || '0.160.0';
+    const scaleMode = params.get('scale') === 'responsive' ? 'responsive' : 'absolute';
 
+    const diag = createDiagnostics([$('diag-text'), $('start-diag-text')]);
+    collectEnvironment(diag);
+    diag.set('Three.js (požadovaná)', threeVersion);
+
+    // Obsluha tlačidla "Umiestniť" a stavových prvkov
+    let placeHandler = null;
     const hud = {
       setStatus(text, ok) { $('status').textContent = text; $('status').classList.toggle('ok', !!ok); },
       setInfo(text) { $('info').textContent = text; },
       setHint(text) { $('hint').textContent = text; },
       showReset(v) { $('reset').style.display = v ? 'block' : 'none'; },
+      setPlaceHandler(fn) { placeHandler = fn; $('place').style.display = fn ? 'block' : 'none'; $('place').disabled = true; },
+      setPlaceEnabled(v) { $('place').disabled = !v; },
       fail(text) { showStart(text); },
     };
+    $('place').addEventListener('click', () => placeHandler && placeHandler());
+    // Počas WebXR nesmú tlačidlá v prekrytí spúšťať "select" (umiestnenie)
+    for (const id of ['bar', 'diag']) {
+      $(id).addEventListener('beforexrselect', (e) => e.preventDefault());
+    }
 
     function showStart(errorText) {
       $('hud').style.display = 'none';
       $('start').style.display = 'block';
-      $('ar-canvas').style.display = 'none';
+      for (const c of ['ar-canvas', 'xr-canvas', 'fb-canvas']) $(c).style.display = 'none';
       const box = $('error');
       box.style.display = errorText ? 'block' : 'none';
       box.textContent = errorText || '';
+      if (errorText) diag.log('Zobrazená chyba: ' + errorText);
     }
     function showHud(canvasId) {
       $('start').style.display = 'none';
       $('hud').style.display = 'block';
       $(canvasId).style.display = 'block';
       hud.showReset(false);
+      hud.setPlaceHandler(null);
+      $('diag').style.display = 'none';
     }
 
-    let THREE;
-    async function ensureThree() {
-      if (THREE) return THREE;
-      const ns = await import(`https://cdn.jsdelivr.net/npm/three@${threeVersion}/build/three.module.js`);
-      THREE = { ...ns };
-      window.THREE = THREE; // 8th Wall engine hľadá globálne THREE
-      return THREE;
+    // Three.js sa sťahuje hneď pri otvorení stránky (aby tlačidlá fungovali bez čakania)
+    let THREE = null;
+    let threePromise = null;
+    function ensureThree() {
+      if (!threePromise) {
+        threePromise = import(`https://cdn.jsdelivr.net/npm/three@${threeVersion}/build/three.module.js`)
+          .then((ns) => {
+            THREE = { ...ns };
+            window.THREE = THREE; // 8th Wall engine hľadá globálne THREE
+            diag.set('Three.js (načítaná)', 'r' + (ns.REVISION || '?'));
+            return THREE;
+          })
+          .catch((e) => { threePromise = null; diag.error('Three.js sa nenačítal: ' + e.message); throw e; });
+      }
+      return threePromise;
     }
+    ensureThree().catch(() => {});
 
-    let ar = null;
+    // WebXR dostupnosť
+    isWebXRArSupported().then((ok) => {
+      $('go-xr').disabled = !ok;
+      $('xr-note').textContent = ok
+        ? 'Odporúčané na Androide: natívne sledovanie cez ARCore.'
+        : 'Tento prehliadač WebXR AR nepodporuje (napr. iPhone). Použi 8th Wall.';
+    });
+
+    let session = null;
+
+    $('go-xr').addEventListener('click', async () => {
+      try {
+        await ensureThree();
+        showHud('xr-canvas');
+        hud.setStatus('WebXR: spúšťam…', false);
+        session = await startWebXR({
+          THREE, canvas: $('xr-canvas'), hud, diag, overlayRoot: $('hud'),
+          onEnd: () => showStart(null),
+        });
+        $('reset').onclick = () => session.reset();
+      } catch (err) {
+        diag.error('WebXR: ' + (err && err.message ? err.message : err));
+        showStart('WebXR AR sa nepodarilo spustiť: ' + (err && err.message ? err.message : err));
+      }
+    });
+
     $('go-ar').addEventListener('click', async () => {
       try {
         await ensureThree();
         showHud('ar-canvas');
         hud.setStatus('AR: spúšťam…', false);
-        ar = await startAR({ THREE, canvas: $('ar-canvas'), hud });
-        $('reset').onclick = () => ar.reset();
+        session = await startAR({ THREE, canvas: $('ar-canvas'), hud, diag, scaleMode });
+        $('reset').onclick = () => session.reset();
       } catch (err) {
+        diag.error('8th Wall: ' + (err && err.message ? err.message : err));
         showStart('AR sa nepodarilo spustiť: ' + (err && err.message ? err.message : err) +
           ' Môžeš skúsiť 3D náhľad bez AR.');
       }
     });
+
     $('go-3d').addEventListener('click', async () => {
       try {
         await ensureThree();
         showHud('fb-canvas');
         startFallback({ THREE, canvas: $('fb-canvas'), hud });
       } catch (err) {
+        diag.error('3D náhľad: ' + (err && err.message ? err.message : err));
         showStart('3D náhľad sa nepodarilo spustiť: ' + (err && err.message ? err.message : err));
       }
     });
+
+    $('diag-btn').addEventListener('click', () => {
+      const d = $('diag');
+      d.style.display = d.style.display === 'block' ? 'none' : 'block';
+    });
+    const doCopy = async (btn) => {
+      const ok = await diag.copy();
+      const old = btn.textContent;
+      btn.textContent = ok ? 'Skopírované' : 'Nepodarilo sa';
+      setTimeout(() => { btn.textContent = old; }, 1500);
+    };
+    $('copy').addEventListener('click', (e) => doCopy(e.currentTarget));
+    $('copy-start').addEventListener('click', (e) => doCopy(e.currentTarget));
     $('close').addEventListener('click', () => location.reload());
   </script>
 </body>
