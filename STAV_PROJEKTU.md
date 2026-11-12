@@ -18,11 +18,13 @@ Posledná aktualizácia: 12. 11. 2026
 - Nie je overené, že engine funguje s Three.js r160 (verziu možno meniť v odkaze: `?three=0.147.0`).
 - `XR8.XrDevice.isDeviceBrowserCompatible` a `onCameraStatusChange` nie sú overené v dokumentácii.
 
-## Čaká na rozhodnutie / akciu
-- GitHub konektor v tejto relácii nevie vytvoriť nový repozitár. Treba ho vytvoriť ručne (prázdny `webar`), potom ho pripojím a nahrám kód.
-- Hosting s HTTPS: GitHub Pages zadarmo vyžaduje verejný repozitár. Verejnosť = potrebný súhlas.
+## Zverejnenie (12. 11. 2026)
+- Repozitár https://github.com/fajnovo/webar je verejný (súhlas: iba testovacia aplikácia). Kód je nahraný (vetva main).
+- Licencia XR Engine: prečítané oficiálne FAQ a pravidlá atribúcie (8thwall.org); povinné oznámenie je v `index.html` a `NOTICE.md`. Plné znenie súboru LICENSE nebolo z prostredia dostupné.
+- GitHub Pages cez API zapnúť nešlo (zablokovaná cesta). Treba ručne: Settings > Pages > Deploy from a branch > main / (root).
+- Testovací odkaz po zapnutí: https://fajnovo.github.io/webar/ (QR: https://fajnovo.github.io/webar/qr.html).
 
 ## Najbližší krok
-1. Vytvoriť repozitár, nahrať kód, sprístupniť test (po súhlase).
+1. Zapnúť Pages, overiť odkaz, test na iPhone a Androide.
 2. Test na iPhone a Androide: stabilita, perspektíva, tiene, obchádzanie stola.
 3. Až po úspešnom teste: Billy (ovečka) a Červená čiapočka.
